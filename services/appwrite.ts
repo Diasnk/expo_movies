@@ -33,10 +33,39 @@ export const updateSearchCount = async (query: string, movie: Movie) => {
                 searchTerm: query,
                 movie_id: movie.id,
                 count: 1,
+                title: movie.title,
                 poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`
     
             });
         }
+    } catch (error) {
+        console.error('Error updating search count in Appwrite:', error);
+        throw error;
     }
 
+}
+
+export const getTrendingMovies = async (): Promise<TrendingMovie[] | undefined> => {
+    try{
+        const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
+            Query.limit(50),
+            Query.orderDesc('count')
+        ]);
+
+        const uniqueMovies = result.documents.reduce<TrendingMovie[]>((movies, document) => {
+            const movie = document as unknown as TrendingMovie;
+            const alreadyAdded = movies.some((item) => item.movie_id === movie.movie_id);
+
+            if (!alreadyAdded) {
+                movies.push(movie);
+            }
+
+            return movies;
+        }, []);
+
+        return uniqueMovies.slice(0, 10);
+    } catch (error) {
+        console.error('Error fetching trending movies from Appwrite:', error);
+        return undefined;
+    }
 }
